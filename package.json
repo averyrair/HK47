@@ -1,0 +1,19 @@
+{
+  "name": "hk47",
+  "version": "1.0.0",
+  "description": "General purpose discord bot with some fun features",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "DrSlug",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/rest": "^1.7.0",
+    "discord.js": "^14.9.0",
+    "dotenv": "^16.0.3",
+    "moment": "^2.29.4",
+    "mysql2": "^3.2.3",
+    "openai": "^3.2.1"
+  }
+}
