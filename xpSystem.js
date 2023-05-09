@@ -31,7 +31,7 @@ async function messageSent(message) {
     }
 
     cooldowns.add(message.member);
-    let xp = (10 * Math.random()) + 15;
+    let xp = (25 * Math.random()) + 15;
     sqlActions.addXP(message.member, xp);
 
 }

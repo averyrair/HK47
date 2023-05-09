@@ -12,6 +12,7 @@ module.exports = {
     LeaderboardTabs,
     getCompetitionTab,
     getTeamTab,
+    getLifetimeTab,
     getButtons,
 	data: new SlashCommandBuilder()
         .setName('leaderboard')
@@ -64,6 +65,26 @@ async function getTeamTab(guild) {
     .setTimestamp();
 }
 
+async function getLifetimeTab(guild) {
+    let scores = await sqlActions.getLifetimeLB(guild);
+    let response = '';
+    if (scores.length == 0) {
+        response = 'No scores to display yet. Go earn some xp!';
+    } else {
+        for (let i = 0; i < scores.length && i < 10; i++) {
+            response += `${i+1}: <@${scores[i].user_id}> : ${scores[i].lifetime_xp}xp\n`;
+        }
+    }
+
+    return new EmbedBuilder()
+    .setColor(0x533c61)
+    .setTitle(`Leaderboard for ${guild.name}`)
+    .addFields(
+        {name: 'Lifetime XP' ,value: response},
+    )
+    .setTimestamp();
+}
+
 function getButtons(tab) {
     return new ActionRowBuilder()
 			.addComponents(
@@ -76,7 +97,7 @@ function getButtons(tab) {
                     .setCustomId('leaderboard_lifetime_tab')
                     .setLabel('Lifetime XP')
                     .setStyle((tab == LeaderboardTabs.LIFETIME) ? ButtonStyle.Primary : ButtonStyle.Secondary)
-                    .setDisabled(true),
+                    .setDisabled(tab == LeaderboardTabs.LIFETIME),
                 new ButtonBuilder()
 					.setCustomId('leaderboard_team_tab')
 					.setLabel('Team Scores')

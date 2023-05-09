@@ -15,6 +15,7 @@ module.exports = {
     ...require('./sql/getEvent'),
     ...require('./sql/getExpiredEvents'),
     ...require('./sql/getLB'),
+    ...require('./sql/getLifetimeLB'),
     ...require('./sql/getMember'),
     ...require('./sql/getMember'),
     ...require('./sql/getScoreChannels'),
