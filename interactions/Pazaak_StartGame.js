@@ -1,4 +1,5 @@
 const pazaak = require('../pazaakSystem');
+const { client } = require('../bot');
 
 module.exports = {
     interactionID: 'start_game',
@@ -8,14 +9,15 @@ module.exports = {
         if (!foundGame) return;
 
         if (interaction.user.id == foundGame.player1.id) {
-            interaction.reply({content: "Solo play is not yet supported.", ephemeral: true});
-            return;
+            foundGame.player2.id = client.user.id;
+            foundGame.player2.name = "HK47";
+        }
+        else {
+            foundGame.player2.id = interaction.user.id;
+            foundGame.player2.name = interaction.member.displayName;
         }
 
         let gameMessage = await interaction.channel.send({content: "Setting up game..."});
-
-        foundGame.player2.id = interaction.user.id;
-        foundGame.player2.name = interaction.member.displayName;
 
         foundGame.messageId = gameMessage.id;
         foundGame.messageChannelId = gameMessage.channelId;

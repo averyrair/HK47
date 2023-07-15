@@ -304,6 +304,11 @@ function endTurn(gameState) {
     gameState.cardPlayed = false;
 
     drawCard(gameState);
+
+    const newActivePlayer = gameState.turn === 1 ? gameState.player1 : gameState.player2;
+    if (newActivePlayer.id === client.user.id) {
+        takeAITurn(gameState);
+    }
 }
 
 function drawCard(gameState) {
@@ -407,6 +412,10 @@ async function endRound(gameState) {
 
     resetBoards(gameState);
     drawCard(gameState);
+    const startingPlayer = gameState.turn === 1 ? gameState.player1 : gameState.player2;
+    if (startingPlayer.id === client.user.id) {
+        takeAITurn(gameState);
+    }
 }
 
 async function resetBoards(gameState) {
@@ -519,45 +528,63 @@ function renderHand(gameState, interaction) {
     };
 }
 
+function getCardValue(player, cardNum) {
+    const card = player.hand[cardNum - 1];
+
+    if (card.startsWith("E")) {
+        return 0;
+    }
+
+    if (card.startsWith("B") || (card.startsWith("P") && player.purpleState === "positive")) {
+        return parseInt(card.substring(1));
+    }
+    return -1 * parseInt(card.substring(1));
+}
+
 async function playCard(cardNum, gameState, interaction) {
+   
+    if (cardNum === null) {
+        return;
+    }
+
     let currPlayer = (gameState.turn == 1) ? gameState.player1 : gameState.player2;
 
-    if (gameState.cardPlayed == true) {
-        interaction.reply({content: "You have already played a card on this turn.", ephemeral: true});
-        return;
-    }
+    if (interaction) {
+        if (gameState.cardPlayed == true) {
+            interaction.reply({content: "You have already played a card on this turn.", ephemeral: true});
+            return;
+        }
 
-    if (currPlayer.hand[cardNum - 1] == "E") {
-        interaction.reply({content: `Card ${cardNum} has already been played.`, ephemeral: true});
-        return;
+        if (currPlayer.hand[cardNum - 1] == "E") {
+            interaction.reply({content: `Card ${cardNum} has already been played.`, ephemeral: true});
+            return;
+        }
     }
+    
 
     let newCard = currPlayer.hand[cardNum - 1];
-
     if (newCard.startsWith("P")) {
-        if (currPlayer.purpleState == "positive") {
+        if (currPlayer.purpleState === "positive") {
             newCard = "B" + newCard.substring(1);
         }
         else {
             newCard = "R" + newCard.substring(1);
         }
     }
+
     
-    if (newCard.startsWith("B")) {
-        currPlayer.score += parseInt(newCard.substring(1));
-    }
-    else if (newCard.startsWith("R")) {
-        currPlayer.score -= parseInt(newCard.substring(1));
-    }
+    currPlayer.score += getCardValue(currPlayer, cardNum);
+    placeCard(gameState, newCard);
 
     currPlayer.hand[cardNum - 1] = "E";
     currPlayer.cardsLeft--;
 
     gameState.cardPlayed = true;
-    
-    placeCard(gameState, newCard);
 
-    interaction.update(renderHand(gameState, interaction));
+    if (interaction) {
+        interaction.update(renderHand(gameState, interaction));
+    }
+    
 }
 
 async function placeCard(gameState, newCard) {
@@ -637,4 +664,71 @@ async function findGame(interaction) {
     }
 
     return foundGame;
+}
+
+function takeAITurn(gameState) {
+
+    const activePlayer = gameState.turn === 1 ? gameState.player1 : gameState.player2;
+    const humanPlayer = gameState.turn === 1 ? gameState.player2 : gameState.player1;
+    const botPlayerNum = gameState.turn;
+
+    setTimeout(function() {
+        activePlayer.purpleState = "negative";
+
+        const lowestPossibleTotal = activePlayer.score + Math.min(0, getCardValue(activePlayer, 1), getCardValue(activePlayer, 2), getCardValue(activePlayer, 3), getCardValue(activePlayer, 4));
+        
+        let currentPossibleTotal = activePlayer.score;
+        let bestCardNum = null;
+    
+        activePlayer.purpleState = activePlayer.score < 20 ? "positive" : "negative";
+        for (let i = 1; i <=4; i++) {
+            const newScore = activePlayer.score + getCardValue(activePlayer, i);
+            if (newScore <= 20 && 20 - newScore < 20 - currentPossibleTotal) {
+                currentPossibleTotal = newScore;
+                bestCardNum = i;
+            }
+        }
+    
+        if (currentPossibleTotal === 20) {
+            playCard(bestCardNum, gameState);
+        }
+        else if (currentPossibleTotal === 19) {
+            if (lowestPossibleTotal <= 11 && humanPlayer.score !== 20) {
+                playCard(bestCardNum, gameState);
+            }
+        }
+        else if (currentPossibleTotal === 18) {
+            if (lowestPossibleTotal <= 13 && humanPlayer.score !== 19) {
+                playCard(bestCardNum, gameState);
+            }
+        }
+
+        //make sure it's still the bots turn
+        if (gameState.turn !== botPlayerNum) {
+            return;
+        }
+        
+        if (activePlayer.score > 20) {
+            if (humanPlayer.score >= 18 && humanPlayer.roundsWon !== 2) {
+                stand(gameState);
+            }
+            else {
+                playCard(bestCardNum, gameState);
+            }
+        }
+    }, 1000);
+
+    //make sure it's still the bots turn
+    if (gameState.turn !== botPlayerNum) {
+        return;
+    }
+
+    setTimeout(function() {
+        if (activePlayer.score >= humanPlayer.score && activePlayer.score >= 18) {
+            stand(gameState);
+        }
+        else {
+            endTurn(gameState);
+        }
+    }, 2000);
 }
