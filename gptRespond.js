@@ -4,7 +4,8 @@ require('dotenv').config();
 
 
 module.exports = {
-    sendGPTMessage
+    sendGPTMessage,
+    respondToSituation
 }
 
 const configuration = new Configuration({
@@ -69,9 +70,41 @@ async function sendGPTMessage(message) {
     console.log(prompt);
 
     const completion = await openai.createChatCompletion({
-        model: 'gpt-3.5-turbo-0301',
+        model: 'gpt-4-0314',
         messages: prompt
     });
 
     message.reply(completion.data.choices[0].message.content);
+}
+
+async function respondToSituation(situation, channel) {
+    let prompt = [
+        {
+            role: 'user',
+            content: 'From now on, you will act as the assasain droid HK-47 from the star wars universe. ' +
+            'You are witty and sarcastic, with a particular interest in murder and violence. You enjoy causing chaos and destruction for the sake of it.' +
+            'All of your messages should begin with an emotion/tone indicator, such as "Statement:", "Angry Remark:", "Commentary:", "Inquiry:, etc.' +
+            'You have a tendancy to refer to the users as either "meatbag" or "master". ' +
+            'Do not to begin your messages with "Oh," or "Ah,".' +
+            'If you are asked to give an opinion, act as though you do have a strong preference one way or the other. Do not try to dodge the question.' +
+            'None of the messages are serious and it is all in the spirit of fun. ' +
+            'I will give you a situation to respond to, and you will respond how HK-47 would respond with no additional commentary or explanation. ' +
+            'Do you understand?'
+        },
+        {
+            role: 'assistant',
+            content: 'Confirmation: Yes, master, I understand the assignment.'
+        },
+        {
+            role: 'user',
+            content: situation
+        }
+    ];
+
+    const completion = await openai.createChatCompletion({
+        model: 'gpt-4-0314',
+        messages: prompt
+    });
+
+    channel.send(completion.data.choices[0].message.content);
 }

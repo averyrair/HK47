@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { client } = require('./bot');
+const { respondToSituation } = require ('./gptRespond');
 
 module.exports = {
     startGame,
@@ -307,7 +308,7 @@ function endTurn(gameState) {
 
     const newActivePlayer = gameState.turn === 1 ? gameState.player1 : gameState.player2;
     if (newActivePlayer.id === client.user.id) {
-        takeAITurn(gameState);
+        setTimeout(function() {takeAITurn(gameState)}, 1500);
     }
 }
 
@@ -359,9 +360,30 @@ async function endRound(gameState) {
 
     if (winner == 1) {
         gameState.player1.roundsWon++;
+
+        if (gameState.player1.id === client.user.id) {
+            respondToSituation(`You are playing the card game Pazaak with a user called ${gameState.player2.name}. You have just won a round.` +
+                `You have now won ${gameState.player1.roundsWon} rounds out of 3 needed to win, and your opponent has won ${gameState.player2.roundsWon} rounds.` +
+                `Come up with some trash talk or taunt for this situation. Your response should only be a sentence or two.`, await client.channels.fetch(gameState.messageChannelId));
+        }
+        else if (gameState.player2.id === client.user.id) {
+            respondToSituation(`You are playing the card game Pazaak with a user called ${gameState.player1.name}. You have just lost a round.` +
+            `Your opponent has now won ${gameState.player1.roundsWon} rounds out of 3 needed to win, and you have won ${gameState.player2.roundsWon} rounds.` +
+            `Come up with either an excuse for why you lost or an insult to say to your opponent (not both). Your response should only be a sentence or two.`, await client.channels.fetch(gameState.messageChannelId));
+        }
     }
     else if (winner == 2) {
         gameState.player2.roundsWon++;
+        if (gameState.player2.id === client.user.id) {
+            respondToSituation(`You are playing the card game Pazaak with a user called ${gameState.player1.name}. You have just won a round.` +
+                `You have now won ${gameState.player2.roundsWon} rounds out of 3 needed to win, and your opponent has won ${gameState.player1.roundsWon} rounds.` +
+                `Come up with some trash talk or taunt for this situation. Your response should only be a sentence or two.`, await client.channels.fetch(gameState.messageChannelId));
+        }
+        else if (gameState.player1.id === client.user.id) {
+            respondToSituation(`You are playing the card game Pazaak with a user called ${gameState.player2.name}. You have just lost a round.` +
+            `Your opponent has now won ${gameState.player2.roundsWon} rounds out of 3 needed to win, and you have won ${gameState.player1.roundsWon} rounds.` +
+            `Come up with either an excuse for why you lost or an insult to say to your opponent (not both). Your response should only be a sentence or two.`, await client.channels.fetch(gameState.messageChannelId));
+        }
     }
 
     if (gameState.player1.roundsWon == 3 || gameState.player2.roundsWon == 3) {
@@ -414,7 +436,7 @@ async function endRound(gameState) {
     drawCard(gameState);
     const startingPlayer = gameState.turn === 1 ? gameState.player1 : gameState.player2;
     if (startingPlayer.id === client.user.id) {
-        takeAITurn(gameState);
+        setTimeout(function() {takeAITurn(gameState)}, 1500);
     }
 }
 
@@ -671,64 +693,61 @@ function takeAITurn(gameState) {
     const activePlayer = gameState.turn === 1 ? gameState.player1 : gameState.player2;
     const humanPlayer = gameState.turn === 1 ? gameState.player2 : gameState.player1;
     const botPlayerNum = gameState.turn;
+    const roundNum = gameState.roundNumber;
 
-    setTimeout(function() {
-        activePlayer.purpleState = "negative";
+    activePlayer.purpleState = "negative";
 
-        const lowestPossibleTotal = activePlayer.score + Math.min(0, getCardValue(activePlayer, 1), getCardValue(activePlayer, 2), getCardValue(activePlayer, 3), getCardValue(activePlayer, 4));
-        
-        let currentPossibleTotal = activePlayer.score;
-        let bestCardNum = null;
+    const lowestPossibleTotal = activePlayer.score + Math.min(0, getCardValue(activePlayer, 1), getCardValue(activePlayer, 2), getCardValue(activePlayer, 3), getCardValue(activePlayer, 4));
     
-        activePlayer.purpleState = activePlayer.score < 20 ? "positive" : "negative";
-        for (let i = 1; i <=4; i++) {
-            const newScore = activePlayer.score + getCardValue(activePlayer, i);
-            if (newScore <= 20 && 20 - newScore < 20 - currentPossibleTotal) {
-                currentPossibleTotal = newScore;
-                bestCardNum = i;
-            }
-        }
-    
-        if (currentPossibleTotal === 20) {
-            playCard(bestCardNum, gameState);
-        }
-        else if (currentPossibleTotal === 19) {
-            if (lowestPossibleTotal <= 11 && humanPlayer.score !== 20) {
-                playCard(bestCardNum, gameState);
-            }
-        }
-        else if (currentPossibleTotal === 18) {
-            if (lowestPossibleTotal <= 13 && humanPlayer.score !== 19) {
-                playCard(bestCardNum, gameState);
-            }
-        }
+    let currentPossibleTotal = activePlayer.score;
+    let bestCardNum = null;
 
-        //make sure it's still the bots turn
-        if (gameState.turn !== botPlayerNum) {
-            return;
+    activePlayer.purpleState = activePlayer.score < 20 ? "positive" : "negative";
+    for (let i = 1; i <=4; i++) {
+        const newScore = activePlayer.score + getCardValue(activePlayer, i);
+        if (newScore <= 20 && 20 - newScore < 20 - currentPossibleTotal) {
+            currentPossibleTotal = newScore;
+            bestCardNum = i;
         }
-        
-        if (activePlayer.score > 20) {
-            if (humanPlayer.score >= 18 && humanPlayer.roundsWon !== 2) {
-                stand(gameState);
-            }
-            else {
-                playCard(bestCardNum, gameState);
-            }
-        }
-    }, 1000);
-
-    //make sure it's still the bots turn
-    if (gameState.turn !== botPlayerNum) {
-        return;
     }
 
-    setTimeout(function() {
-        if (activePlayer.score >= humanPlayer.score && activePlayer.score >= 18) {
+    if (currentPossibleTotal === 20) {
+        playCard(bestCardNum, gameState);
+    }
+    else if (currentPossibleTotal === 19) {
+        if (lowestPossibleTotal <= 11 && humanPlayer.score !== 20) {
+            playCard(bestCardNum, gameState);
+        }
+    }
+    else if (currentPossibleTotal === 18) {
+        if (lowestPossibleTotal <= 13 && humanPlayer.score !== 19) {
+            playCard(bestCardNum, gameState);
+        }
+    }
+
+    //make sure it's still the bots turn
+    if (gameState.turn !== botPlayerNum || gameState.roundNumber !== roundNum) {
+        return;
+    }
+    
+    if (activePlayer.score > 20) {
+        if (humanPlayer.score >= 18 && humanPlayer.roundsWon !== 2) {
             stand(gameState);
         }
         else {
-            endTurn(gameState);
+            playCard(bestCardNum, gameState);
         }
-    }, 2000);
+    }
+
+    //make sure it's still the bots turn
+    if (gameState.turn !== botPlayerNum || gameState.roundNumber !== roundNum) {
+        return;
+    }
+
+    if (activePlayer.score >= humanPlayer.score && activePlayer.score >= 18) {
+        stand(gameState);
+    }
+    else {
+        endTurn(gameState);
+    }
 }
