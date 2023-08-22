@@ -6,8 +6,9 @@ module.exports = {
         .setName('translateToEnglish')
         .setType(ApplicationCommandType.Message),
 	async execute(interaction) {
+		interaction.deferReply();
 		const message = await interaction.channel.messages.fetch(interaction.targetId);
 		const translation = await translateMessage(message.content, "English")
-		await interaction.reply({content: translation, ephemeral: true});
+		await interaction.followUp({content: translation, ephemeral: true});
 	},
 };
