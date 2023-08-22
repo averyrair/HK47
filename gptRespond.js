@@ -5,7 +5,8 @@ require('dotenv').config();
 
 module.exports = {
     sendGPTMessage,
-    respondToSituation
+    respondToSituation,
+    translateMessage
 }
 
 const configuration = new Configuration({
@@ -107,4 +108,14 @@ async function respondToSituation(situation, channel) {
     });
 
     channel.send(completion.data.choices[0].message.content);
+}
+
+async function translateMessage(messageText, toLanguage) {
+    console.log(messageText);
+    const completion = await openai.createChatCompletion({
+        model: 'gpt-4-0314',
+        messages: [{role: 'user', content:`Output the translation of the following message into ${toLanguage}:\n${messageText}`}]
+    });
+
+    return completion.data.choices[0].message.content;
 }
