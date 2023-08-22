@@ -111,10 +111,10 @@ async function respondToSituation(situation, channel) {
 }
 
 async function translateMessage(messageText, toLanguage) {
-    console.log(messageText);
+    console.log(messageText, toLanguage);
     const completion = await openai.createChatCompletion({
         model: 'gpt-4-0314',
-        messages: [{role: 'user', content:`Output the translation of the following message into ${toLanguage}:\n${messageText}`}]
+        messages: [{role: 'user', content:`Translate the following message into ${toLanguage}. Output only the translation in ${toLanguage}:\n${messageText}`}]
     });
 
     return completion.data.choices[0].message.content;
