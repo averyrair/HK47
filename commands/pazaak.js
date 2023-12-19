@@ -6,6 +6,7 @@ module.exports = {
         .setName('pazaak')
         .setDescription('Starts a game of pazaak.'),
 	async execute(interaction) {
-        startGame(interaction);
+                interaction.reply("Pazaak is Temporarily Disabled")
+        //startGame(interaction);
 	},
 };
