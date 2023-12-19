@@ -1,5 +1,6 @@
 //sqlAction setup
 module.exports = {
+    ...require('./sql/addCredits'),
     ...require('./sql/addEvent'),
     ...require('./sql/addNewMember'),
     ...require('./sql/addNewServer'),
