@@ -6,16 +6,16 @@ module.exports = {
     giveCredits
 }
 
-function giveCredits(message) {
+async function giveCredits(message) {
 
     if (cooldowns.has(message.member)) {
         return
     }
 
-    const CREDITS_CHANCE = 20
-    const NUM_CREDITS = 50
-    if ((Math.random() * 100) < CREDITS_CHANCE) {
-        sqlActions.addCredits(message.member, NUM_CREDITS)
+    let creditsProb = await sqlActions.getCreditsProb(message.guild)
+    let numCredits = await sqlActions.getCreditsPay(message.guild)
+    if ((Math.random() * 100) < creditsProb) {
+        sqlActions.addCredits(message.member, numCredits)
         message.react('1186794130098114600')
     }
 }

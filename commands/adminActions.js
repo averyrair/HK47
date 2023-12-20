@@ -111,6 +111,25 @@ module.exports = {
                 option.setName('value')
                     .setDescription('The new xp value')
                     .setRequired(true))
+        )
+        .addSubcommand(subCommand => subCommand
+            .setName('set-credits-probability')
+            .setDescription('Sets the probability that a message will earn credits (0-100)')
+            .addIntegerOption(option => 
+                option.setName('percentage')
+                    .setDescription('chance of earning credits')
+                    .setRequired(true)
+                    .setMinValue(0)
+                    .setMaxValue(100))
+        )
+        .addSubcommand(subCommand => subCommand
+            .setName('set-credits-payout')
+            .setDescription('Sets the number of credits earned from messages')
+            .addIntegerOption(option => 
+                option.setName('credits')
+                    .setDescription('Number of credits earned from each message.')
+                    .setRequired(true)
+                    .setMinValue(0))
         ),
 	async execute(interaction) {
 		switch (interaction.options.getSubcommand()) {
@@ -143,6 +162,12 @@ module.exports = {
                 break;
             case 'set-xp':
                 setXP(interaction);
+                break;
+            case 'set-credits-probability':
+                setCreditsProb(interaction);
+                break;
+            case 'set-credits-payout':
+                setCreditsPayout(interaction);
                 break;
             default:
                 break;
@@ -362,4 +387,39 @@ async function setXP(interaction) {
 
     await interaction.reply({ content: '', embeds: [embed] });
 	
+}
+
+async function setCreditsProb(interaction) {
+    sqlActions.setCreditsProb(interaction.guild, interaction.options.getInteger('percentage'));
+
+    const embed = new EmbedBuilder()
+        .setColor(0x533c61)
+        .setTitle(`Credits Probability Set!`)
+        .addFields(
+            {
+                name: `⠀`, 
+                value: `There is now a ${interaction.options.getInteger('percentage')}% chance that` +
+                    ` a message will earn credits.`
+            },
+        )
+        .setTimestamp();
+
+    await interaction.reply({ content: '', embeds: [embed] });
+}
+
+async function setCreditsPayout(interaction) {
+    sqlActions.setCreditsPayout(interaction.guild, interaction.options.getInteger('credits'));
+
+    const embed = new EmbedBuilder()
+        .setColor(0x533c61)
+        .setTitle(`Credits Payout Set!`)
+        .addFields(
+            {
+                name: `⠀`, 
+                value: `Messages that earn credits will now earn ${interaction.options.getInteger('credits')} <:credits:1186794130098114600>`
+            },
+        )
+        .setTimestamp();
+
+    await interaction.reply({ content: '', embeds: [embed] });
 }
