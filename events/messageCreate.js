@@ -1,6 +1,7 @@
 const { Events } = require('discord.js');
 const sqlActions = require('../sqlActions');
 const xpSystem = require('../xpSystem');
+const currencySystem = require('../currencySystem')
 const { client } = require('../bot');
 const { sendGPTMessage, gptHelloThere } = require('../gptRespond');
 
@@ -18,6 +19,7 @@ module.exports = {
             sendGPTMessage(message);
         }
         
+        currencySystem.giveCredits(message);
         xpSystem.messageSent(message);
         
     }

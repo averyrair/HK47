@@ -1,6 +1,8 @@
 const { EmbedBuilder } = require('discord.js');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { client } = require('./bot');
+const sqlActions = require('./sqlActions');
+const { respondToSituation } = require('./gptRespond')
 
 module.exports = {
     startGame,
@@ -61,6 +63,20 @@ const greenDeck = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10"];
 const sideDeck = ["B1", "B2", "B3", "B4", "B5", "B6", "R1", "R2", "R3", "R4", "R5", "R6", "P1", "P2", "P3", "P4", "P5", "P6"];
 
 async function startGame(interaction) {
+
+    let wager = interaction.options.getInteger('wager') ?? 0;
+    let availableCredits = (await sqlActions.getMember(interaction.member)).credits
+    if (availableCredits < wager) {
+        interaction.reply({content: (await respondToSituation(
+            `${interaction.member.displayName} is attempting to wager credits on a` +
+            ` game of Pazaak but they tried to wager more credits than they have. ` +
+            `Make fun of them for it.`
+        )),
+        ephemeral:true})
+        
+        return
+    }
+
     let player1Hand = [];
     for (let i = 0; i < 4; i++) {
         player1Hand[i] = sideDeck[Math.floor(Math.random()*sideDeck.length)];
@@ -78,6 +94,7 @@ async function startGame(interaction) {
         gameOver: false,
         cardPlayed: false,
         roundNumber: 0,
+        wager: wager,
         player1: {
             id: interaction.user.id,
             name: interaction.member.displayName,
@@ -133,7 +150,7 @@ async function startGame(interaction) {
         .setColor(0xb078ff)
         .setTitle('Pazaak Beta')
         .addFields(
-            {name: `Press Start to Join Game` ,value: `opponent: ${interaction.member.displayName}`}
+            {name: `Press Start to Join Game` ,value: `opponent: ${interaction.member.displayName}\nwager: ${wager} <:credits:1186794130098114600>`}
         )
         .setTimestamp();
 
@@ -369,6 +386,11 @@ async function endRound(gameState) {
             losePlayer = gameState.player1;
         }
 
+        let winner = client.channels.cache.get(gameState.messageChannelId).guild.members.cache.get(winPlayer.id);
+        let loser = client.channels.cache.get(gameState.messageChannelId).guild.members.cache.get(losePlayer.id);
+        sqlActions.addCredits(winner, gameState.wager);
+        sqlActions.addCredits(loser, -1 * gameState.wager);
+
         let loserScoreEmojis = '⚪⚪⚪';
         switch (losePlayer.roundsWon) {
             case 1:
@@ -381,7 +403,10 @@ async function endRound(gameState) {
         }
 
         let gameOverTitle = 'Game Over';
-        let gameOverMessage = `**Winner**\n${winPlayer.name}: 🔴🔴🔴\n**Loser**\n${losePlayer.name}: ${loserScoreEmojis}`;
+        let gameOverMessage = `**Winner**\n${winPlayer.name}: 🔴🔴🔴\n` + 
+            `+${gameState.wager} <:credits:1186794130098114600>\n\n` + 
+            `**Loser**\n${losePlayer.name}: ${loserScoreEmojis}\n` + 
+            `-${gameState.wager} <:credits:1186794130098114600>`;
 
         if (losePlayer.lost == true) {
             gameOverMessage = `**Winner**\n${winPlayer.name}\n**Loser**\n${losePlayer.name}`;

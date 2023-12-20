@@ -3,7 +3,7 @@ const { db } = require('../db');
 module.exports.getMember = function getMember(member) {
     return new Promise((resolve, reject) => {
         db.query(`
-            SELECT experience
+            SELECT *
             FROM members
             WHERE user_id = ${db.escape(member.user.id)} AND server_id = ${db.escape(member.guild.id)}
         `,

@@ -1,14 +1,15 @@
 const sqlActions = require('./sqlActions');
 const { client } = require('./bot');
 
+const cooldowns = new Set();
+
 module.exports = {
     resetCooldowns,
     resolveScoreboard,
     messageSent,
     updateScoreboards,
+    cooldowns
 }
-
-const cooldowns = new Set();
 
 function resetCooldowns() {
     cooldowns.clear();

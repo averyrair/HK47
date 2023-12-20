@@ -1,5 +1,6 @@
 //sqlAction setup
 module.exports = {
+    ...require('./sql/addCredits'),
     ...require('./sql/addEvent'),
     ...require('./sql/addNewMember'),
     ...require('./sql/addNewServer'),
@@ -12,6 +13,8 @@ module.exports = {
     ...require('./sql/deleteScoreChannel'),
     ...require('./sql/deleteTeam'),
     ...require('./sql/getBannedChannels'),
+    ...require('./sql/getCreditsPay'),
+    ...require('./sql/getCreditsProb'),
     ...require('./sql/getEvent'),
     ...require('./sql/getExpiredEvents'),
     ...require('./sql/getLB'),
@@ -24,6 +27,8 @@ module.exports = {
     ...require('./sql/getTeamScores'),
     ...require('./sql/getXP'),
     ...require('./sql/resetScores'),
+    ...require('./sql/setCreditsPay'),
+    ...require('./sql/setCreditsProb'),
     ...require('./sql/setXP'),
     ...require('./sql/startNewRound'),
     ...require('./sql/updateDB'),
