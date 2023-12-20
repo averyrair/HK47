@@ -94,6 +94,7 @@ async function startGame(interaction) {
         gameOver: false,
         cardPlayed: false,
         roundNumber: 0,
+        wager: wager,
         player1: {
             id: interaction.user.id,
             name: interaction.member.displayName,
@@ -385,6 +386,11 @@ async function endRound(gameState) {
             losePlayer = gameState.player1;
         }
 
+        let winner = client.channels.cache.get(gameState.messageChannelId).guild.members.cache.get(winPlayer.id);
+        let loser = client.channels.cache.get(gameState.messageChannelId).guild.members.cache.get(losePlayer.id);
+        sqlActions.addCredits(winner, gameState.wager);
+        sqlActions.addCredits(loser, -1 * gameState.wager);
+
         let loserScoreEmojis = '⚪⚪⚪';
         switch (losePlayer.roundsWon) {
             case 1:
@@ -397,7 +403,10 @@ async function endRound(gameState) {
         }
 
         let gameOverTitle = 'Game Over';
-        let gameOverMessage = `**Winner**\n${winPlayer.name}: 🔴🔴🔴\n**Loser**\n${losePlayer.name}: ${loserScoreEmojis}`;
+        let gameOverMessage = `**Winner**\n${winPlayer.name}: 🔴🔴🔴\n` + 
+            `+${gameState.wager} <:credits:1186794130098114600>\n\n` + 
+            `**Loser**\n${losePlayer.name}: ${loserScoreEmojis}\n` + 
+            `-${gameState.wager} <:credits:1186794130098114600>`;
 
         if (losePlayer.lost == true) {
             gameOverMessage = `**Winner**\n${winPlayer.name}\n**Loser**\n${losePlayer.name}`;

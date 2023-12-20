@@ -1,4 +1,6 @@
 const pazaak = require('../pazaakSystem');
+const sqlActions = require('../sqlActions');
+const { respondToSituation } = require('../gptRespond');
 
 module.exports = {
     interactionID: 'start_game',
@@ -9,6 +11,18 @@ module.exports = {
 
         if (interaction.user.id == foundGame.player1.id) {
             interaction.reply({content: "Solo play is not yet supported.", ephemeral: true});
+            return;
+        }
+
+        let availableCredits = (await sqlActions.getMember(interaction.member)).credits
+        if (availableCredits < foundGame.wager) {
+            interaction.reply({content: (await respondToSituation(
+                `${interaction.member.displayName} is attempting to wager credits on a` +
+                ` game of Pazaak but they tried to wager more credits than they have. ` +
+                `Make fun of them for it.`
+            )),
+            ephemeral:true});
+        
             return;
         }
 
