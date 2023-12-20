@@ -19,3 +19,4 @@ function giveCredits(message) {
         message.react('1186794130098114600')
     }
 }
+

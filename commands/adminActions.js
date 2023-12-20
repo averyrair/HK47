@@ -355,7 +355,7 @@ async function setXP(interaction) {
         .addFields(
             {
                 name: `⠀`, 
-                value: `${member.displayName} now has ${(await sqlActions.getXP(member))[0].experience}xp`
+                value: `${member.displayName} now has ${(await sqlActions.getXP(member))}xp`
             },
         )
         .setTimestamp();
