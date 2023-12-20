@@ -8,7 +8,7 @@ module.exports.getXP = function getXP(member) {
             WHERE server_id = ${db.escape(member.guild.id)} AND user_id = ${db.escape(member.id)}
         `,
         (err, results) => {
-            return err ? reject(err) : resolve(results[0])
+            return err ? reject(err) : resolve(results[0].experience)
         });
     });
 }
