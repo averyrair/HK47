@@ -398,7 +398,7 @@ async function setCreditsProb(interaction) {
         .addFields(
             {
                 name: `⠀`, 
-                value: `There is now a ${interaction.options.getInteger('percentage')}% chance that` +
+                value: `There is now a ${(await sqlActions.getCreditsProb(interaction.guild))}% chance that` +
                     ` a message will earn credits.`
             },
         )
@@ -416,7 +416,7 @@ async function setCreditsPayout(interaction) {
         .addFields(
             {
                 name: `⠀`, 
-                value: `Messages that earn credits will now earn ${interaction.options.getInteger('credits')} <:credits:1186794130098114600>`
+                value: `Messages that earn credits will now earn ${(await sqlActions.getCreditsPay(interaction.guild))} <:credits:1186794130098114600>`
             },
         )
         .setTimestamp();
