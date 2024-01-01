@@ -29,6 +29,7 @@ module.exports = {
     ...require('./sql/resetScores'),
     ...require('./sql/setCreditsPay'),
     ...require('./sql/setCreditsProb'),
+    ...require('./sql/setPazaakCollection'),
     ...require('./sql/setXP'),
     ...require('./sql/startNewRound'),
     ...require('./sql/updateDB'),
