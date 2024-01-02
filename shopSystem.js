@@ -207,8 +207,6 @@ async function buyItem(interaction) {
         interaction.reply({content: messageText, ephemeral: true});
         return;
     }
-    
-    sqlActions.addCredits(interaction.member, itemPrice * -1);
 
     //if the item is a pazaak card
     let itemIndex = defaultShopItems.indexOf(item)
@@ -219,6 +217,7 @@ async function buyItem(interaction) {
 
         if (newNum >= 5) {
             interaction.reply({content: 'You already have the maximum allowed copies of this card', ephemeral: true});
+            return;
         }
 
         let newCollection = currCollection.substring(0, itemIndex) + newNum + currCollection.substring(itemIndex + 1);
@@ -226,6 +225,7 @@ async function buyItem(interaction) {
         sqlActions.setPazaakCollection(interaction.member, newCollection);
     }
 
+    sqlActions.addCredits(interaction.member, itemPrice * -1);
     interaction.reply(`${client.emojis.cache.get(item.emoji)}\n` +
         `${interaction.member.displayName} has purchased ${item.name} ` +
         `for ${item.price} <:credits:1186794130098114600>\n` +
