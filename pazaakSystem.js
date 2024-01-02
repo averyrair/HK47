@@ -12,6 +12,7 @@ module.exports = {
     stand,
     endRound,
     resetBoards,
+    renderCollection,
     renderHand,
     playCard,
     placeCard,
@@ -662,4 +663,53 @@ async function findGame(interaction) {
     }
 
     return foundGame;
+}
+
+async function renderCollection(interaction) {
+
+    let body = 'Side Deck\n'
+
+    let sideDeck = (await sqlActions.getMember(interaction.member)).pazaak_sidedeck;
+    for (let i = 0; i < 10; i += 2) {
+        body += symbols.get(sideDeck.substring(i, i+2));
+    }
+    body += '\n';
+    for (let i = 10; i < 20; i += 2) {
+        body += symbols.get(sideDeck.substring(i, i+2));
+    }
+    body += '\n\nCollection\n';
+
+    let collection = (await sqlActions.getMember(interaction.member)).pazaak_collection;
+    for (let i = 0; i < 23; i++) {
+        if (collection.charAt(i) === '0') {
+            continue;
+        }
+
+        let currSymbol = '';
+        if (i < 6) {
+            currSymbol = symbols.get(`B${i+1}`);
+        }
+        else if (i < 12) {
+            currSymbol = symbols.get(`R${i-5}`);
+        }
+        else if (i < 18) {
+            currSymbol = symbols.get(`R${i-11}`);
+        }
+        else {
+            currSymbol = 'Y';
+        }
+
+        body += `${currSymbol} x${collection.charAt(i)}\n`
+    }
+
+    let embed = new EmbedBuilder()
+        .setColor(0x533c61)
+        .setTitle(`Pazaak Collection for ${interaction.member.displayName}`)
+        .addFields(
+            {name: '⠀' ,value: body},
+        )
+        .setTimestamp();
+    
+    return {embeds: [embed]};
+
 }
