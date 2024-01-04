@@ -1,5 +1,11 @@
 const { EmbedBuilder } = require('discord.js');
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    StringSelectMenuBuilder,
+    StringSelectMenuOptionBuilder
+} = require('discord.js');
 const { client } = require('./bot');
 const sqlActions = require('./sqlActions');
 const { respondToSituation } = require('./gptRespond')
@@ -12,15 +18,20 @@ module.exports = {
     stand,
     endRound,
     resetBoards,
+    renderCollection,
     renderHand,
     playCard,
     placeCard,
     flipPurple,
     isActivePlayer,
     findGame,
+    createCardManager,
+    swapSideDeckCards,
+    findManager,
 }
 
 let pazaakGames = [];
+let pazaakManagers = [];
 
 const symbols = new Map([
     ["E", "<:pazaak_empty:892834795770490972>"],
@@ -60,7 +71,6 @@ const symbols = new Map([
 ]);
 
 const greenDeck = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10"];
-const sideDeck = ["B1", "B2", "B3", "B4", "B5", "B6", "R1", "R2", "R3", "R4", "R5", "R6", "P1", "P2", "P3", "P4", "P5", "P6"];
 
 async function startGame(interaction) {
 
@@ -78,13 +88,7 @@ async function startGame(interaction) {
     }
 
     let player1Hand = [];
-    for (let i = 0; i < 4; i++) {
-        player1Hand[i] = sideDeck[Math.floor(Math.random()*sideDeck.length)];
-    }
     let player2Hand = [];
-    for (let i = 0; i < 4; i++) {
-        player2Hand[i] = sideDeck[Math.floor(Math.random()*sideDeck.length)];
-    }
     
 
     let gameState = {
@@ -662,4 +666,197 @@ async function findGame(interaction) {
     }
 
     return foundGame;
+}
+
+async function renderCollection(manager) {
+
+    let member = await (await client.guilds.fetch(manager.guildId)).members.fetch(manager.memberId);
+
+    let body = 'Side Deck\n'
+
+    let sideDeck = (await sqlActions.getMember(member)).pazaak_sidedeck;
+    for (let i = 0; i < 10; i += 2) {
+        body += symbols.get(sideDeck.substring(i, i+2));
+    }
+    body += '\n';
+    for (let i = 10; i < 20; i += 2) {
+        body += symbols.get(sideDeck.substring(i, i+2));
+    }
+    body += '\n\nCollection\n';
+
+    let collection = (await sqlActions.getMember(member)).pazaak_collection;
+    for (let i = 0; i < 23; i++) {
+        if (collection.charAt(i) === '0') {
+            continue;
+        }
+
+        let currSymbol = '';
+        if (i < 6) {
+            currSymbol = symbols.get(`B${i+1}`);
+        }
+        else if (i < 12) {
+            currSymbol = symbols.get(`R${i-5}`);
+        }
+        else if (i < 18) {
+            currSymbol = symbols.get(`P${i-11}`);
+        }
+        else {
+            currSymbol = 'Y';
+        }
+
+        body += `${currSymbol} x${collection.charAt(i)}\n`
+    }
+
+    let embed = new EmbedBuilder()
+        .setColor(0x533c61)
+        .setTitle(`Pazaak Collection for ${member.displayName}`)
+        .addFields(
+            {name: '⠀' ,value: body},
+        )
+        .setTimestamp();
+
+    const buttonRow = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId('back')
+                .setLabel('Back')
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('swap_cards')
+                .setLabel('Swap Cards')
+                .setStyle(ButtonStyle.Primary),
+        );
+
+    let cardToReplaceBuilder = new StringSelectMenuBuilder()
+        .setCustomId('card_to_replace')
+        .setPlaceholder('Select a side deck card to replace');
+
+    for (let i = 0; i < 10; i++) {
+        cardToReplaceBuilder.addOptions(
+            new StringSelectMenuOptionBuilder()
+                .setLabel(getCardLabel(sideDeck.substring(2*i, (2*i)+2)))
+                .setValue(`${i}`)
+                .setEmoji(symbols.get(sideDeck.substring(2*i, (2*i)+2)))
+        );
+    }
+
+    let cardToAddBuilder = new StringSelectMenuBuilder()
+        .setCustomId('card_to_add')
+        .setPlaceholder('Select a card to swap in')
+
+    let sdNumFormat = '00000000000000000000000'
+    for (let i = 0; i < 10; i++) {
+        let cardIndex = 0;
+        let cardName = sideDeck.substring(2*i, (2*i)+2);
+        if (cardName.charAt(0) === 'R') {
+            cardIndex += 6;
+        }
+        else if (cardName.charAt(0) === 'P') {
+            cardIndex += 12;
+        }
+        else if (cardName.charAt(0) === 'Y') {
+            cardIndex += 18;
+        }
+
+        cardIndex += parseInt(cardName.charAt(1) - 1);
+
+        sdNumFormat = sdNumFormat.substring(0, cardIndex) + (parseInt(sdNumFormat.charAt(cardIndex)) + 1) + sdNumFormat.substring(cardIndex + 1);
+    }
+
+    for (let i = 0; i < 23; i++) {
+        if (collection.charAt(i) !== sdNumFormat.charAt(i)) {
+            let currCard = '';
+            if (i < 6) {
+                currCard = `B${i+1}`;
+            }
+            else if (i < 12) {
+                currCard = `R${i-5}`;
+            }
+            else if (i < 18) {
+                currCard = `P${i-11}`;
+            }
+            else {
+                currCard = `Y${i-17}`;
+            }
+
+
+            cardToAddBuilder.addOptions(
+                new StringSelectMenuOptionBuilder()
+                    .setLabel(getCardLabel(currCard))
+                    .setValue(currCard)
+                    .setEmoji(symbols.get(currCard))
+            );
+        }
+    }
+
+
+    const dropDown1 = new ActionRowBuilder()
+        .addComponents(
+            cardToReplaceBuilder,
+        )
+
+    const dropDown2 = new ActionRowBuilder()
+        .addComponents(
+            cardToAddBuilder,
+        )
+    
+    return {embeds: [embed], components: [dropDown1, dropDown2, buttonRow]};
+
+}
+
+function getCardLabel(cardName) {
+    let label = '';
+    if (cardName.charAt(0) === 'B') {
+        label += '+';
+    }
+    else if (cardName.charAt(0) === 'R') {
+        label += '-';
+    }
+    else {
+        label += '±';
+    }
+
+    label += cardName.charAt(1) + ' Card';
+
+    return label;
+}
+
+function createCardManager(interaction) {
+    let manager = {
+        memberId: interaction.user.id,
+        guildId: interaction.guild.id,
+        messageId: interaction.message.id,
+        cardToReplaceIndex: null,
+        cardToAdd: null
+    }
+
+    pazaakManagers.push(manager);
+
+    return manager;
+}
+
+async function swapSideDeckCards(manager) {
+
+    let member = await (await client.guilds.fetch(manager.guildId)).members.fetch(manager.memberId);
+
+    let sideDeck = (await sqlActions.getMember(member)).pazaak_sidedeck;
+
+    sideDeck = sideDeck.substring(0, (manager.cardToReplaceIndex * 2)) + manager.cardToAdd + sideDeck.substring((manager.cardToReplaceIndex * 2) + 2);
+
+    await sqlActions.setPazaakSideDeck(member, sideDeck);
+}
+
+async function findManager(interaction) {
+    let foundManager = null;
+    for (manager of pazaakManagers) {
+        if (manager.messageId == interaction.message.id) {
+            foundManager = manager;
+            break;
+        }
+    }
+    if (foundManager == null) {
+        await interaction.reply({content: "This card manager is not active.", ephemeral: true});
+    }
+
+    return foundManager;
 }

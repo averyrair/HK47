@@ -1,6 +1,7 @@
 const pazaak = require('../pazaakSystem');
 const sqlActions = require('../sqlActions');
 const { respondToSituation } = require('../gptRespond');
+const { client } = require('../bot');
 
 module.exports = {
     interactionID: 'start_game',
@@ -33,6 +34,35 @@ module.exports = {
 
         foundGame.messageId = gameMessage.id;
         foundGame.messageChannelId = gameMessage.channelId;
+
+        let guild = (await client.channels.fetch(foundGame.messageChannelId)).guild
+        let player1Member = await guild.members.fetch(foundGame.player1.id);
+
+        let player1SideDeckStr = (await sqlActions.getMember(player1Member)).pazaak_sidedeck;
+        let player2SideDeckStr = (await sqlActions.getMember(interaction.member)).pazaak_sidedeck;
+
+        let player1SideDeck = [];
+        let player2SideDeck = [];
+
+        let player1Hand = [];
+        let player2Hand = [];
+
+        for (let i = 0; i < 10; i++) {
+            player1SideDeck.push(player1SideDeckStr.substring(i*2, (i*2)+2));
+            player2SideDeck.push(player1SideDeckStr.substring(i*2, (i*2)+2));
+        }
+        for (let i = 0; i < 4; i++) {
+            let cardIndex1 = Math.floor(Math.random()*player1SideDeck.length);
+            player1Hand.push(player1SideDeck[cardIndex1]);
+            player1SideDeck.splice(cardIndex1, 1);
+
+            let cardIndex2 = Math.floor(Math.random()*player2SideDeck.length);
+            player2Hand.push(player2SideDeck[cardIndex2]);
+            player2SideDeck.splice(cardIndex2, 1);
+        }
+
+        foundGame.player1.hand = player1Hand;
+        foundGame.player2.hand = player2Hand;
 
         interaction.message.delete();
 
