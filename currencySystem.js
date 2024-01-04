@@ -14,7 +14,9 @@ async function giveCredits(message) {
 
     let creditsProb = await sqlActions.getCreditsProb(message.guild)
     let numCredits = await sqlActions.getCreditsPay(message.guild)
-    if ((Math.random() * 100) < creditsProb) {
+    let randomNum = Math.random() * 100;
+    //console.log(randomNum);
+    if (randomNum < creditsProb) {
         sqlActions.addCredits(message.member, numCredits)
         message.react('1186794130098114600')
     }
