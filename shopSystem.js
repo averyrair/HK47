@@ -146,6 +146,9 @@ async function renderShopPage(shopInstance) {
 
 async function nextPage(interaction) {
     let shopInstance = await findShop(interaction);
+    if (!shopInstance) {
+        return;
+    }
 
     if (interaction.user.id !== shopInstance.userId) {
         interaction.reply({content: "You are not the active shopper.", ephemeral: true});
@@ -159,6 +162,9 @@ async function nextPage(interaction) {
 
 async function prevPage(interaction) {
     let shopInstance = await findShop(interaction);
+    if (!shopInstance) {
+        return;
+    }
 
     if (interaction.user.id !== shopInstance.userId) {
         interaction.reply({content: "You are not the active shopper.", ephemeral: true});
@@ -173,7 +179,6 @@ async function prevPage(interaction) {
 async function selectItem(interaction, itemNum) {
     let shopInstance = await findShop(interaction);
     if (!shopInstance) {
-        interaction.reply({content: "This shop is expired. use /shop to open a new shop.", ephemeral: true});
         return;
     }
 
@@ -191,7 +196,6 @@ async function selectItem(interaction, itemNum) {
 async function buyItem(interaction) {
     let shopInstance = await findShop(interaction);
     if (!shopInstance) {
-        interaction.reply({content: "This shop is expired. use /shop to open a new shop.", ephemeral: true});
         return;
     }
 
