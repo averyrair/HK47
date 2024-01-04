@@ -4,6 +4,7 @@ module.exports = {
     interactionID: 'manage_pazaak',
     execute: async (interaction) => {
 
-        interaction.update(await pazaak.renderCollection(interaction));
+        let manager = pazaak.createCardManager(interaction);
+        interaction.update(await pazaak.renderCollection(manager));
     }
 }

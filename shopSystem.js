@@ -226,10 +226,10 @@ async function buyItem(interaction) {
     }
 
     sqlActions.addCredits(interaction.member, itemPrice * -1);
-    interaction.reply(`${client.emojis.cache.get(item.emoji)}\n` +
+    await interaction.update(await renderShopPage(shopInstance));
+    interaction.followUp(`${client.emojis.cache.get(item.emoji)}\n` +
         `${interaction.member.displayName} has purchased ${item.name} ` +
-        `for ${item.price} <:credits:1186794130098114600>\n` +
-        `Their balance is now ${userBalance - item.price} <:credits:1186794130098114600>`
+        `for ${item.price} <:credits:1186794130098114600>`
     );
 
 }

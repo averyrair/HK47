@@ -8,6 +8,7 @@ module.exports = {
 	async execute(interaction) {
 		await interaction.reply(await getProfileEmbed(interaction));
 	},
+    getProfileEmbed
 };
 
 
