@@ -8,7 +8,7 @@ const {
 } = require('discord.js');
 const { client } = require('./bot');
 const sqlActions = require('./sqlActions');
-const { respondToSituation } = require('./gptRespond')
+const { respondToSituation } = require('./gptRespond');
 
 module.exports = {
     startGame,
@@ -306,6 +306,8 @@ function renderBoard(gameState) {
 
 function endTurn(gameState) {
 
+    let fromAI = isAITurn(gameState);
+
     if (gameState.player1.standing && gameState.player2.standing) {
         endRound(gameState);
         return;
@@ -325,6 +327,10 @@ function endTurn(gameState) {
     gameState.cardPlayed = false;
 
     drawCard(gameState);
+
+    if (!fromAI && isAITurn(gameState)) {
+        setTimeout(_ => takeAITurn(gameState), 1000);
+    }
 }
 
 function drawCard(gameState) {
@@ -351,6 +357,8 @@ function stand(gameState) {
 
 async function endRound(gameState) {
 
+    let fromAI = isAITurn(gameState);
+
     let winner = 0;
     if (gameState.player1.lost == true) {
         winner = 2;
@@ -366,12 +374,6 @@ async function endRound(gameState) {
     else if (gameState.player2.filledSpaces == 9) winner = 2;
     else if (gameState.player1.score > gameState.player2.score) winner = 1;
     else if (gameState.player2.score > gameState.player1.score) winner = 2;
-    
-    if (((winner == 1 || winner == 0) && gameState.player1.score == 20) || (winner == 2 && gameState.player2.score == 20)) {
-        (await client.channels.fetch(gameState.messageChannelId)).messages.fetch(gameState.messageId)
-            .then(msg => msg.edit(renderBoard(gameState)));
-        await new Promise(r => setTimeout(r, 2500));
-    }
 
     if (winner == 1) {
         gameState.player1.roundsWon++;
@@ -392,8 +394,12 @@ async function endRound(gameState) {
 
         let winner = client.channels.cache.get(gameState.messageChannelId).guild.members.cache.get(winPlayer.id);
         let loser = client.channels.cache.get(gameState.messageChannelId).guild.members.cache.get(losePlayer.id);
-        sqlActions.addCredits(winner, gameState.wager);
-        sqlActions.addCredits(loser, -1 * gameState.wager);
+        if (winPlayer.id !== client.user.id) {
+            sqlActions.addCredits(winner, gameState.wager);
+        }
+        if (losePlayer.id !== client.user.id) {
+            sqlActions.addCredits(loser, -1 * gameState.wager);
+        }
 
         let loserScoreEmojis = '⚪⚪⚪';
         switch (losePlayer.roundsWon) {
@@ -436,6 +442,10 @@ async function endRound(gameState) {
 
     resetBoards(gameState);
     drawCard(gameState);
+
+    if (!fromAI && isAITurn(gameState)) {
+        setTimeout(_ => takeAITurn(gameState), 1000);
+    }
 }
 
 async function resetBoards(gameState) {
@@ -549,6 +559,9 @@ function renderHand(gameState, interaction) {
 }
 
 async function playCard(cardNum, gameState, interaction) {
+
+    let fromAI = (interaction === undefined);
+
     let currPlayer = (gameState.turn == 1) ? gameState.player1 : gameState.player2;
 
     if (gameState.cardPlayed == true) {
@@ -562,6 +575,9 @@ async function playCard(cardNum, gameState, interaction) {
     }
 
     let newCard = currPlayer.hand[cardNum - 1];
+    if (newCard === undefined) {
+        console.log(':(');
+    }
 
     if (newCard.startsWith("P")) {
         if (currPlayer.purpleState == "positive") {
@@ -586,7 +602,9 @@ async function playCard(cardNum, gameState, interaction) {
     
     placeCard(gameState, newCard);
 
-    interaction.update(renderHand(gameState, interaction));
+    if (!fromAI) {
+        interaction.update(renderHand(gameState, interaction));
+    }
 }
 
 async function placeCard(gameState, newCard) {
@@ -667,6 +685,97 @@ async function findGame(interaction) {
 
     return foundGame;
 }
+
+async function takeAITurn(gameState) {
+    while (isAITurn(gameState) && gameState.gameOver === false) {
+        let aiPlayer = (gameState.turn === 1) ? gameState.player1 : gameState.player2;
+        let humanPlayer = (gameState.turn === 1) ? gameState.player2 : gameState.player1;
+        
+        if (humanPlayer.standing && aiPlayer.score <= 20 && aiPlayer.score > humanPlayer.score) {
+            console.log("Standing (winning already)");
+            stand(gameState);
+            continue;
+        }
+
+        let lowestPossibleTotal = aiPlayer.score;
+        let currentPossibleTotal = aiPlayer.score;
+        let bestCard = -1;
+
+        for (let i = 0; i < 4; i++) {
+            if (aiPlayer.hand[i] === "E") {
+                continue;
+            }
+
+            let minCardVal = 0;
+            let cardVal = 0;
+            if (aiPlayer.hand[i].charAt(0) === 'B') {
+                cardVal = parseInt(aiPlayer.hand[i].charAt(1));
+                minCardVal = cardVal;
+            }
+            else if (aiPlayer.hand[i].charAt(0) === 'R') {
+                cardVal = parseInt(aiPlayer.hand[i].charAt(1)) * -1;
+                minCardVal = cardVal;
+            }
+            else if (aiPlayer.hand[i].charAt(0) === 'P') {
+                minCardVal = parseInt(aiPlayer.hand[i].charAt(1)) * -1;
+                if (aiPlayer.score >= 20) {
+                    cardVal = minCardVal;
+                }
+                else {
+                    cardVal = -1 * minCardVal;
+                }
+            }
+
+            lowestPossibleTotal = Math.min(lowestPossibleTotal, aiPlayer.score + minCardVal);
+            if (aiPlayer.score + cardVal <= 20 && aiPlayer.score + cardVal > currentPossibleTotal) {
+                currentPossibleTotal = aiPlayer.score + cardVal;
+                bestCard = i + 1;
+            }
+        }
+
+        //now we have lowestPossibleTotal and currentPossibleTotal along with the card to consider
+        if (bestCard !== -1) {
+            if (currentPossibleTotal === 20) {
+                playCard(bestCard, gameState);
+            }
+            else if (currentPossibleTotal === 19) {
+                if (lowestPossibleTotal <= 11 && humanPlayer.score !== 20) {
+                    playCard(bestCard, gameState);
+                }
+            }
+            else if (currentPossibleTotal === 18) {
+                if (lowestPossibleTotal <= 13 && humanPlayer.score < 19) {
+                    playCard(bestCard, gameState);
+                }
+            }
+            else if (aiPlayer.score > 20 && currentPossibleTotal <= 20 && humanPlayer.score < 18) {
+                playCard(bestCard, gameState);
+            }
+        } 
+        
+        if (!isAITurn(gameState)) {
+            break;
+        }
+
+        if (humanPlayer.score <= aiPlayer.score && aiPlayer.score >= 18) {
+            console.log("Standing (acceptable score)");
+            stand(gameState);
+        }
+        else {
+            console.log("Ending Turn");
+            endTurn(gameState);
+        }
+    }
+}
+
+function isAITurn(gameState) {
+    return (gameState.turn === 1 && gameState.player1.id === client.user.id) || (gameState.turn === 2 && gameState.player2.id === client.user.id);
+}
+
+
+
+
+//CARD MANAGEMENT STUFF
 
 async function renderCollection(manager) {
 

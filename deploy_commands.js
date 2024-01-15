@@ -27,16 +27,16 @@ const rest = new REST({ version: '10' }).setToken(process.env.REST_TOKEN);
 	try {
 		console.log('Started refreshing application (/) commands.');
 
-		await rest.put( //adding commands
-			//Routes.applicationGuildCommands(clientId, guildId), //for guild only commands
-			Routes.applicationCommands(clientId), //for global commands
-			{ body: commands },
-		);
+		// await rest.put( //adding commands
+		// 	//Routes.applicationGuildCommands(clientId, guildId), //for guild only commands
+		// 	Routes.applicationCommands(clientId), //for global commands
+		// 	{ body: commands },
+		// );
 
-		// //deleting commands
-		// await rest.put(Routes.applicationCommands(clientId), { body: [] })
-		// 	.then(() => console.log('Successfully deleted all guild commands.'))
-		// 	.catch(console.error);
+		//deleting commands
+		await rest.put(Routes.applicationCommands(clientId), { body: [] })
+			.then(() => console.log('Successfully deleted all guild commands.'))
+			.catch(console.error);
 
 		console.log('Successfully reloaded application (/) commands.');
 
