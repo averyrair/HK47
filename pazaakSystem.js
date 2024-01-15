@@ -351,6 +351,7 @@ function stand(gameState) {
 
 async function endRound(gameState) {
 
+    gameState.cardPlayed = false;
     let winner = 0;
     if (gameState.player1.lost == true) {
         winner = 2;
