@@ -49,7 +49,7 @@ module.exports = {
 
         for (let i = 0; i < 10; i++) {
             player1SideDeck.push(player1SideDeckStr.substring(i*2, (i*2)+2));
-            player2SideDeck.push(player1SideDeckStr.substring(i*2, (i*2)+2));
+            player2SideDeck.push(player2SideDeckStr.substring(i*2, (i*2)+2));
         }
         for (let i = 0; i < 4; i++) {
             let cardIndex1 = Math.floor(Math.random()*player1SideDeck.length);
