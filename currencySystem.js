@@ -19,6 +19,7 @@ async function giveCredits(message) {
     if (randomNum < creditsProb) {
         sqlActions.addCredits(message.member, numCredits)
         message.react('1186794130098114600')
+        setTimeout(async _ => (await message.reactions.resolve('1186794130098114600')).remove(), 2000)
     }
 }
 
