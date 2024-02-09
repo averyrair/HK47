@@ -41,7 +41,7 @@ const contextActionFiles = fs.readdirSync(contextActionPath).filter(file => file
 for (const file of contextActionFiles) {
     const filePath = path.join(contextActionPath, file);
     const contextActionModule = require(filePath);
-    client.interactions.set(contextActionModule.data.name, contextActionModule);
+    client.interactions.set(contextActionModule.interactionID, contextActionModule);
 }
 
 //event handler setup
