@@ -34,6 +34,16 @@ for (const file of interactionFiles) {
     client.interactions.set(interactionModule.interactionID, interactionModule);
 }
 
+//context action setup
+const contextActionPath = path.join(__dirname, 'contextActions');
+const contextActionFiles = fs.readdirSync(contextActionPath).filter(file => file.endsWith('.js'));
+
+for (const file of contextActionFiles) {
+    const filePath = path.join(contextActionPath, file);
+    const contextActionModule = require(filePath);
+    client.interactions.set(contextActionModule.data.name, contextActionModule);
+}
+
 //event handler setup
 const eventsPath = path.join(__dirname, 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
