@@ -15,6 +15,7 @@ module.exports = {
         }
 
         foundGame.gameOver = true;
+        sqlActions.addCredits(interaction.member, foundGame.wager);
         interaction.message.delete();
     }
 }
