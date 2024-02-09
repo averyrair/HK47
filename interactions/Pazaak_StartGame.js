@@ -27,7 +27,7 @@ module.exports = {
         
             return;
         }
-        sqlActions.addCredits(member, -1 * foundGame.wager);
+        sqlActions.addCredits(interaction.member, -1 * foundGame.wager);
 
         let gameMessage = await interaction.channel.send({content: "Setting up game..."});
 

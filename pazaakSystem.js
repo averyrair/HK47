@@ -87,7 +87,7 @@ async function startGame(interaction) {
         
         return
     }
-    sqlActions.addCredits(member, -1 * wager);
+    sqlActions.addCredits(interaction.member, -1 * wager);
 
     let player1Hand = [];
     let player2Hand = [];
