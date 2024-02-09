@@ -75,7 +75,8 @@ const greenDeck = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10"];
 async function startGame(interaction) {
 
     let wager = interaction.options.getInteger('wager') ?? 0;
-    let availableCredits = (await sqlActions.getMember(interaction.member)).credits
+    let member = await sqlActions.getMember(interaction.member);
+    let availableCredits = member.credits;
     if (availableCredits < wager) {
         interaction.reply({content: (await respondToSituation(
             `${interaction.member.displayName} is attempting to wager credits on a` +
@@ -86,6 +87,7 @@ async function startGame(interaction) {
         
         return
     }
+    sqlActions.addCredits(member, -1 * wager);
 
     let player1Hand = [];
     let player2Hand = [];
@@ -393,8 +395,7 @@ async function endRound(gameState) {
 
         let winner = client.channels.cache.get(gameState.messageChannelId).guild.members.cache.get(winPlayer.id);
         let loser = client.channels.cache.get(gameState.messageChannelId).guild.members.cache.get(losePlayer.id);
-        sqlActions.addCredits(winner, gameState.wager);
-        sqlActions.addCredits(loser, -1 * gameState.wager);
+        sqlActions.addCredits(winner, 2*gameState.wager);
 
         let loserScoreEmojis = '⚪⚪⚪';
         switch (losePlayer.roundsWon) {

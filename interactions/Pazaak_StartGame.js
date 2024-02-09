@@ -15,7 +15,8 @@ module.exports = {
             return;
         }
 
-        let availableCredits = (await sqlActions.getMember(interaction.member)).credits
+        let member = await sqlActions.getMember(interaction.member);
+        let availableCredits = member.credits;
         if (availableCredits < foundGame.wager) {
             interaction.reply({content: (await respondToSituation(
                 `${interaction.member.displayName} is attempting to wager credits on a` +
@@ -26,6 +27,7 @@ module.exports = {
         
             return;
         }
+        sqlActions.addCredits(member, -1 * foundGame.wager);
 
         let gameMessage = await interaction.channel.send({content: "Setting up game..."});
 
