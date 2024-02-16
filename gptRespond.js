@@ -70,7 +70,7 @@ async function sendGPTMessage(message) {
     console.log(prompt);
 
     const completion = await openai.createChatCompletion({
-        model: 'gpt-3.5-turbo-0301',
+        model: env.OPEN_AI_LLM_MODEL_VERSION,
         messages: prompt
     });
 
@@ -102,7 +102,7 @@ async function respondToSituation(situation) {
     ];
 
     const completion = await openai.createChatCompletion({
-        model: 'gpt-3.5-turbo-0301',
+        model: env.OPEN_AI_LLM_MODEL_VERSION,
         messages: prompt
     });
 
