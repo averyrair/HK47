@@ -24,6 +24,24 @@ module.exports = {
                 });
             }
         }
+        else if (interaction.isContextMenuCommand()) {
+            const contextActionModule = interaction.client.interactions.get(interaction.commandName);
+
+            if (!contextActionModule) {
+                return;
+            }
+
+            try {
+                await contextActionModule.execute(interaction);
+            }
+            catch (error) {
+                console.error(error);
+                await interaction.reply({
+                    content: '*Irritated Remark:* There was an error executing this command due to the overwhelming stupidity of my master.',
+                    ephemeral: true
+                });
+            }
+        }
         else {
             const interactionModule = interaction.client.interactions.get(interaction.customId);
 
