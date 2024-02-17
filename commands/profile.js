@@ -6,7 +6,7 @@ module.exports = {
         .setName('profile')
         .setDescription('view your profile and stats'),
 	async execute(interaction) {
-		await interaction.reply(await getProfileEmbed(interaction));
+		await interaction.reply(await getProfileEmbed(interaction.member));
 	},
     getProfileEmbed
 };
@@ -34,13 +34,13 @@ const pazaakSymbols = new Map([
 ]);
 
 
-async function getProfileEmbed(interaction) {
+async function getProfileEmbed(member) {
 
-    let body = `XP: ${(await sqlActions.getXP(interaction.member))}\n` +
-        `Credits: ${(await sqlActions.getMember(interaction.member)).credits}` +
+    let body = `XP: ${(await sqlActions.getXP(member))}\n` +
+        `Credits: ${(await sqlActions.getMember(member)).credits}` +
         ` <:credits:1186794130098114600>\n\nPazaak Side Deck:\n`;
 
-    let pazaakDeck = (await sqlActions.getMember(interaction.member)).pazaak_sidedeck;
+    let pazaakDeck = (await sqlActions.getMember(member)).pazaak_sidedeck;
     for (let i = 0; i < 10; i += 2) {
         body += pazaakSymbols.get(pazaakDeck.substring(i, i+2));
     }
@@ -51,7 +51,7 @@ async function getProfileEmbed(interaction) {
 
     let embed = new EmbedBuilder()
     .setColor(0x533c61)
-    .setTitle(`Profile for ${interaction.member.displayName}`)
+    .setTitle(`Profile for ${member.displayName}`)
     .addFields(
         {name: '⠀' ,value: body},
     )
