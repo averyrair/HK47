@@ -1,6 +1,7 @@
 const { client } = require('./bot');
 const { Configuration, OpenAIApi } = require('openai');
 require('dotenv').config();
+const { getProfileEmbed } = require('./commands/profile');
 
 
 module.exports = {
@@ -15,6 +16,18 @@ const configuration = new Configuration({
   const openai = new OpenAIApi(configuration);
 
 async function sendGPTMessage(message) {
+
+    let tools = [
+        {
+            type: "function",
+            function: {
+                name: "show_profile",
+                description: "Displays the users profile, which includes their xp value, credits balance, and pazaak deck." +
+                             "It should be called when the user asks about their profile, how many credits they have, or what pazaak cards they have.",
+                parameters: {}
+            }
+        }
+    ]
 
     let context = (await message.channel.messages.fetch({ limit: 10, cache: false })).reverse();
 
@@ -70,11 +83,21 @@ async function sendGPTMessage(message) {
     console.log(prompt);
 
     const completion = await openai.createChatCompletion({
-        model: 'gpt-3.5-turbo-0301',
-        messages: prompt
+        model: process.env.OPENAI_LLM_MODEL_VERSION,
+        messages: prompt,
+        tools: tools
     });
 
-    message.reply(completion.data.choices[0].message.content);
+    if (completion.data.choices[0].finish_reason == "tool_calls") {
+        switch (completion.data.choices[0].message.tool_calls[0].function.name) {
+            case "show_profile":
+                console.log("showing profile");
+                message.reply(await getProfileEmbed(message.member));
+        }
+    }
+    else {
+        message.reply(completion.data.choices[0].message.content);
+    }
 }
 
 async function respondToSituation(situation) {
@@ -102,7 +125,7 @@ async function respondToSituation(situation) {
     ];
 
     const completion = await openai.createChatCompletion({
-        model: 'gpt-3.5-turbo-0301',
+        model: process.env.OPENAI_LLM_MODEL_VERSION,
         messages: prompt
     });
 

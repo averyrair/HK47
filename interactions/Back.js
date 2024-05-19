@@ -9,6 +9,6 @@ module.exports = {
             interaction.reply({content: 'Only the person who issued the original command can go back.', ephemeral: true});
             return;
         }
-        interaction.update(await getProfileEmbed(interaction));
+        interaction.update(await getProfileEmbed(interaction.member));
     }
 }

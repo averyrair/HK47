@@ -4,7 +4,16 @@ module.exports = {
     interactionID: 'manage_pazaak',
     execute: async (interaction) => {
 
-        if (interaction.message.interaction.user.id !== interaction.user.id) {
+        let userID = null;
+        if (interaction.message.interaction) {
+            userID = interaction.message.interaction.user.id;
+        }
+        else {
+            let channel = interaction.channel;
+            userID = (await channel.messages.fetch(interaction.message.reference.messageId)).user.id;
+        }
+
+        if (userID !== interaction.user.id) {
             interaction.reply({content: 'Only the person who issued the original command can use this button.', ephemeral: true});
             return;
         }
