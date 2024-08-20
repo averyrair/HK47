@@ -17,17 +17,17 @@ const configuration = new Configuration({
 
 async function sendGPTMessage(message) {
 
-    let tools = [
-        {
-            type: "function",
-            function: {
-                name: "show_profile",
-                description: "Displays the users profile, which includes their xp value, credits balance, and pazaak deck." +
-                             "It should be called when the user asks about their profile, how many credits they have, or what pazaak cards they have.",
-                parameters: {}
-            }
-        }
-    ]
+    // let tools = [
+    //     {
+    //         type: "function",
+    //         function: {
+    //             name: "show_profile",
+    //             description: "Displays the users profile, which includes their xp value, credits balance, and pazaak deck." +
+    //                          "It should be called when the user asks about their profile, how many credits they have, or what pazaak cards they have.",
+    //             parameters: {}
+    //         }
+    //     }
+    // ]
 
     let context = (await message.channel.messages.fetch({ limit: 10, cache: false })).reverse();
 
@@ -59,6 +59,7 @@ async function sendGPTMessage(message) {
         let channels = currMessage.mentions.channels;
         let roles = currMessage.mentions.roles;
         let content = currMessage.content;
+        let attachments = currMessage.attachments;
 
         for (let [id, member] of members) {
             content = content.replace(new RegExp(`<@${id}>`, "g"), member.displayName)
@@ -76,7 +77,11 @@ async function sendGPTMessage(message) {
             prompt.push({role: 'assistant', content: content});
         }
         else {
-            prompt.push({role: 'user', content: `{author: ${currMessage.member.displayName}, messageContent: ${content}}`})
+            let newMessage = {role: 'user', content: [{'type': 'text', 'text': `{author: ${currMessage.member.displayName}, messageContent: ${content}}`}]};
+            for (att of attachments) {
+                newMessage.content.push({'type': 'image_url', 'image_url': {'url': att[1].url}});
+            }
+            prompt.push(newMessage);
         }
     }
 
@@ -85,7 +90,7 @@ async function sendGPTMessage(message) {
     const completion = await openai.createChatCompletion({
         model: process.env.OPENAI_LLM_MODEL_VERSION,
         messages: prompt,
-        tools: tools
+        // tools: tools
     });
 
     if (completion.data.choices[0].finish_reason == "tool_calls") {
