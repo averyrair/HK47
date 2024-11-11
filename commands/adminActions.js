@@ -130,6 +130,24 @@ module.exports = {
                     .setDescription('Number of credits earned from each message.')
                     .setRequired(true)
                     .setMinValue(0))
+        )
+        .addSubcommand(subCommand => subCommand
+            .setName('add-pin-role')
+            .setDescription('Grants a role permission to pin messages')
+            .addRoleOption(option =>
+                option.setName('role')
+                    .setDescription("The role to grant pinning permissions to.")
+                    .setRequired(true)
+            )
+        )
+        .addSubcommand(subCommand => subCommand
+            .setName('remove-pin-role')
+            .setDescription('Revokes a role from pin permissions')
+            .addRoleOption(option =>
+                option.setName('role')
+                    .setDescription("The role to remove pinning permissions from.")
+                    .setRequired(true)
+            )
         ),
 	async execute(interaction) {
 		switch (interaction.options.getSubcommand()) {
@@ -168,6 +186,12 @@ module.exports = {
                 break;
             case 'set-credits-payout':
                 setCreditsPayout(interaction);
+                break;
+            case 'add-pin-role':
+                addPinRole(interaction);
+                break;
+            case 'remove-pin-role':
+                removePinRole(interaction);
                 break;
             default:
                 break;
@@ -417,6 +441,42 @@ async function setCreditsPayout(interaction) {
             {
                 name: `⠀`, 
                 value: `Messages that earn credits will now earn ${(await sqlActions.getCreditsPay(interaction.guild))} <:credits:1186794130098114600>`
+            },
+        )
+        .setTimestamp();
+
+    await interaction.reply({ content: '', embeds: [embed] });
+}
+
+async function addPinRole(interaction) {
+    let roleId = interaction.options.getRole('role').id;
+    sqlActions.addPermRole(roleId, interaction.guildId, 'pin');
+
+    const embed = new EmbedBuilder()
+        .setColor(0x533c61)
+        .setTitle(`Pin Role Added`)
+        .addFields(
+            {
+                name: `⠀`, 
+                value: `<@&${roleId}> can now pin messages.`
+            },
+        )
+        .setTimestamp();
+
+    await interaction.reply({ content: '', embeds: [embed] });
+}
+
+async function removePinRole(interaction) {
+    let roleId = interaction.options.getRole('role').id;
+    sqlActions.deletePermRole(roleId);
+
+    const embed = new EmbedBuilder()
+        .setColor(0x533c61)
+        .setTitle(`Pin Role Removed`)
+        .addFields(
+            {
+                name: `⠀`, 
+                value: `<@&${roleId}> can no longer pin messages.`
             },
         )
         .setTimestamp();
